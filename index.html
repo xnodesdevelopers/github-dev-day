@@ -1219,6 +1219,249 @@ main.content-main > aside > .glass{
 }
 </style>
 
+
+<style id="final-ui-bug-fixes">
+/* =========================================================
+   FINAL UI BUG FIXES
+   1. Header / repository navigation spacing
+   2. Sticky-header anchor clearance
+   3. Session Breakdown legend spacing
+   4. Faculty dropdown stacking / collision fix
+   5. Registration form breathing room
+   6. Footer true horizontal + vertical centering
+   ========================================================= */
+
+/* ---------- Header / navigation ---------- */
+#site-header {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 1000 !important;
+}
+
+#site-header > div:first-child {
+  padding-left: clamp(14px, 3vw, 28px) !important;
+  padding-right: clamp(14px, 3vw, 28px) !important;
+}
+
+#site-header > div:last-child {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding-left: clamp(14px, 3vw, 28px) !important;
+  padding-right: clamp(14px, 3vw, 28px) !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  scrollbar-width: none;
+}
+
+#site-header > div:last-child::-webkit-scrollbar {
+  display: none;
+}
+
+.repo-tab {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex: 0 0 auto !important;
+  margin-right: 0 !important;
+  padding: 13px 7px !important;
+  white-space: nowrap !important;
+}
+
+.repo-tab > svg {
+  flex: 0 0 auto;
+  display: block;
+}
+
+.repo-tab::after {
+  left: 0 !important;
+  right: 0 !important;
+}
+
+/* Sticky headers can cover an anchor after clicking Register / README links. */
+#top,
+#register {
+  scroll-margin-top: 110px !important;
+}
+
+/* ---------- Session Breakdown legend ---------- */
+.side-card .lang-bar + div {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  column-gap: 18px !important;
+  row-gap: 9px !important;
+}
+
+.side-card .lang-bar + div > span {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  white-space: nowrap !important;
+  margin: 0 !important;
+}
+
+/* ---------- Registration / custom Faculty select ---------- */
+#register,
+#register > .glass-strong,
+#form-wrap,
+#reg-form,
+#reg-form > div {
+  overflow: visible !important;
+}
+
+#register > .glass-strong {
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+#form-wrap {
+  position: relative !important;
+  z-index: 2 !important;
+  padding: clamp(34px, 5vw, 52px) !important;
+}
+
+#reg-form {
+  position: relative !important;
+  z-index: 3 !important;
+}
+
+.cselect {
+  position: relative !important;
+  z-index: 10 !important;
+}
+
+.cselect.open {
+  z-index: 9999 !important;
+}
+
+#faculty-select.open {
+  z-index: 10000 !important;
+}
+
+.cselect-panel {
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  top: calc(100% + 8px) !important;
+  z-index: 10001 !important;
+  max-height: 320px !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  visibility: hidden;
+  pointer-events: none;
+  background: rgba(7, 10, 17, 0.98) !important;
+  background-color: #080c14 !important;
+  border: 1px solid rgba(255,255,255,.15) !important;
+  border-radius: 17px !important;
+  box-shadow:
+    0 28px 70px -22px rgba(0,0,0,.98),
+    0 14px 34px -18px rgba(74,132,255,.38),
+    inset 0 1px 0 rgba(255,255,255,.08) !important;
+  backdrop-filter: blur(24px) saturate(170%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(170%) !important;
+  transform-origin: top center;
+}
+
+.cselect.open .cselect-panel {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  transform: translateY(0) scale(1) !important;
+}
+
+.cselect:not(.open) .cselect-panel {
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
+.cselect-option {
+  position: relative !important;
+  z-index: 1 !important;
+  min-height: 44px;
+  padding: 10px 14px !important;
+  color: var(--fg-default) !important;
+  background: transparent !important;
+}
+
+.cselect-option:hover,
+.cselect-option.active {
+  background: rgba(110,168,255,.14) !important;
+}
+
+/* ---------- Footer ---------- */
+footer {
+  width: 100% !important;
+  min-height: 92px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+}
+
+footer > p {
+  margin: 0 !important;
+  text-align: center !important;
+}
+
+/* ---------- Responsive refinements ---------- */
+@media (max-width: 760px) {
+  #site-header > div:last-child {
+    gap: 6px !important;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+
+  .repo-tab {
+    gap: 7px !important;
+    padding: 12px 6px !important;
+    font-size: .8rem !important;
+  }
+
+  #form-wrap {
+    padding: 28px 20px !important;
+  }
+
+  .side-card .lang-bar + div {
+    column-gap: 14px !important;
+    row-gap: 8px !important;
+  }
+
+  footer {
+    min-height: 82px !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  #site-header > div:first-child {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+
+  .repo-tab {
+    gap: 6px !important;
+    padding-left: 5px !important;
+    padding-right: 5px !important;
+    font-size: .76rem !important;
+  }
+
+  .repo-tab > svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  #form-wrap {
+    padding: 26px 17px !important;
+  }
+
+  footer {
+    min-height: 76px !important;
+  }
+}
+</style>
+
 </head>
 <body>
 
@@ -1369,35 +1612,37 @@ main.content-main > aside > .glass{
           <p class="text-sm my-2" style="color:#cdd6e4;">Please ensure all submitted details are accurate, especially the name required for your certificate.</p>
         </div>
 
-        <h3 class="readme-h2">Deadline countdown</h3>
-        <div class="gh-code glass">
-          <div class="gh-code-header">
-            <div class="flex items-center gap-2 font-mono text-xs" style="color: var(--fg-subtle);">
-              <span class="w-2.5 h-2.5 rounded-full" style="background:#ff5f56;"></span>
-              <span class="w-2.5 h-2.5 rounded-full" style="background:#ffbd2e;"></span>
-              <span class="w-2.5 h-2.5 rounded-full" style="background:#27c93f;"></span>
-              <span class="ml-2">countdown.sh</span>
+        <h3 class="readme-h2 deadline-title">Deadline countdown</h3>
+        <div class="gh-code glass deadline-card">
+          <div class="gh-code-header deadline-header">
+            <div class="deadline-file flex items-center gap-2 font-mono text-xs" style="color: var(--fg-subtle);">
+              <span class="terminal-dot" aria-hidden="true"></span>
+              <span class="terminal-dot" aria-hidden="true"></span>
+              <span class="terminal-dot" aria-hidden="true"></span>
+              <span class="deadline-file-name">countdown.sh</span>
             </div>
-            <span id="countdown-status" class="font-mono text-xs" style="color: var(--success-fg);">closing on the 24th</span>
+            <span id="countdown-status" class="deadline-status font-mono text-xs" style="color: var(--success-fg);">closing on the 24th</span>
           </div>
-          <div class="p-4 sm:p-5 font-mono text-sm overflow-x-auto">
-            <p class="term-cursor" style="color:var(--fg-subtle);">$ git log --until="24th 23:59:59" --seats-remaining</p>
-            <div id="countdown" class="grid grid-cols-4 gap-2 sm:gap-3 mt-4 max-w-md">
-              <div class="cd-tile rounded-xl py-3 sm:py-4 text-center lift glass-strong">
-                <div id="cd-days" class="text-xl sm:text-2xl font-bold text-white"><span class="cd-digit">00</span></div>
-                <div class="text-[0.6rem] tracking-widest mt-1" style="color:var(--fg-subtle);">DAYS</div>
+          <div class="deadline-body">
+            <div class="deadline-command-wrap">
+              <p class="term-cursor deadline-command" style="color:var(--fg-subtle);">$ git log --until="24th 23:59:59" --seats-remaining</p>
+            </div>
+            <div id="countdown" class="deadline-grid">
+              <div class="cd-tile deadline-tile rounded-xl text-center lift glass-strong">
+                <div id="cd-days" class="deadline-number font-bold text-white"><span class="cd-digit">00</span></div>
+                <div class="deadline-label" style="color:var(--fg-subtle);">DAYS</div>
               </div>
-              <div class="cd-tile rounded-xl py-3 sm:py-4 text-center lift glass-strong">
-                <div id="cd-hours" class="text-xl sm:text-2xl font-bold text-white"><span class="cd-digit">00</span></div>
-                <div class="text-[0.6rem] tracking-widest mt-1" style="color:var(--fg-subtle);">HOURS</div>
+              <div class="cd-tile deadline-tile rounded-xl text-center lift glass-strong">
+                <div id="cd-hours" class="deadline-number font-bold text-white"><span class="cd-digit">00</span></div>
+                <div class="deadline-label" style="color:var(--fg-subtle);">HOURS</div>
               </div>
-              <div class="cd-tile rounded-xl py-3 sm:py-4 text-center lift glass-strong">
-                <div id="cd-mins" class="text-xl sm:text-2xl font-bold text-white"><span class="cd-digit">00</span></div>
-                <div class="text-[0.6rem] tracking-widest mt-1" style="color:var(--fg-subtle);">MINS</div>
+              <div class="cd-tile deadline-tile rounded-xl text-center lift glass-strong">
+                <div id="cd-mins" class="deadline-number font-bold text-white"><span class="cd-digit">00</span></div>
+                <div class="deadline-label" style="color:var(--fg-subtle);">MINS</div>
               </div>
-              <div class="cd-tile rounded-xl py-3 sm:py-4 text-center lift glass-strong">
-                <div id="cd-secs" class="text-xl sm:text-2xl font-bold text-white"><span class="cd-digit">00</span></div>
-                <div class="text-[0.6rem] tracking-widest mt-1" style="color:var(--fg-subtle);">SECS</div>
+              <div class="cd-tile deadline-tile rounded-xl text-center lift glass-strong">
+                <div id="cd-secs" class="deadline-number font-bold text-white"><span class="cd-digit">00</span></div>
+                <div class="deadline-label" style="color:var(--fg-subtle);">SECS</div>
               </div>
             </div>
           </div>
@@ -1455,10 +1700,10 @@ main.content-main > aside > .glass{
           <span style="width:35%; background:var(--success-fg);"></span>
           <span style="width:20%; background:var(--grad-2);"></span>
         </div>
-        <div class="flex flex-wrap gap-x-4 gap-y-1.5 text-xs" style="color: var(--fg-muted);">
-          <span class="flex items-center gap-1.5"><span class="lang-dot" style="background:var(--grad-1);"></span>Git 45%</span>
-          <span class="flex items-center gap-1.5"><span class="lang-dot" style="background:var(--success-fg);"></span>GitHub 35%</span>
-          <span class="flex items-center gap-1.5"><span class="lang-dot" style="background:var(--grad-2);"></span>Collaboration 20%</span>
+        <div class="session-legend text-xs" style="color: var(--fg-muted);" aria-label="Session breakdown legend">
+          <span class="session-legend-item"><span class="lang-dot" style="background:var(--grad-1);"></span><span>Git 45%</span></span>
+          <span class="session-legend-item"><span class="lang-dot" style="background:var(--success-fg);"></span><span>GitHub 35%</span></span>
+          <span class="session-legend-item"><span class="lang-dot" style="background:var(--grad-2);"></span><span>Collaboration 20%</span></span>
         </div>
       </div>
     </div>
@@ -1466,8 +1711,8 @@ main.content-main > aside > .glass{
 </main>
 
 <!-- ============ REGISTRATION FORM ============ -->
-<section id="register" class="max-w-3xl mx-auto px-4 sm:px-6 pb-20 scroll-mt-20">
-  <div class="rounded-2xl reveal glass-strong overflow-hidden relative">
+<section id="register" class="registration-section pb-20 scroll-mt-20">
+  <div class="rounded-2xl reveal glass-strong relative">
 
     <div class="flex items-center gap-2.5 px-5 sm:px-7 py-4" style="border-bottom:1px solid var(--border-default);">
       <svg viewBox="0 0 16 16" width="17" height="17" fill="currentColor" style="color:var(--fg-muted);"><path d="M5 3.75a.75.75 0 0 1 .75-.75h8.5a.75.75 0 0 1 0 1.5h-8.5A.75.75 0 0 1 5 3.75Zm0 5a.75.75 0 0 1 .75-.75h8.5a.75.75 0 0 1 0 1.5h-8.5A.75.75 0 0 1 5 8.75Zm0 5a.75.75 0 0 1 .75-.75h8.5a.75.75 0 0 1 0 1.5h-8.5a.75.75 0 0 1-.75-.75ZM2.5 3.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm0 5a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm0 5a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>
@@ -2017,7 +2262,7 @@ main.content-main > aside > .glass{
 (() => {
   const root = document.querySelector('#register');
   if (!root) return;
-  // Keep confirmation aligned with the form's left reading axis.
+  // Keep the confirmation on the exact same reading axis as the form.
   const align = () => {
     root.querySelectorAll('*').forEach(el => {
       const t = (el.textContent || '').replace(/\s+/g, ' ').trim();
@@ -2029,9 +2274,9 @@ main.content-main > aside > .glass{
           panel = panel.parentElement;
         }
         panel.style.textAlign = 'left';
-        panel.style.marginLeft = 'clamp(0px, 2.5vw, 28px)';
-        panel.style.marginRight = 'auto';
-        panel.style.maxWidth = '900px';
+        panel.style.marginLeft = '0';
+        panel.style.marginRight = '0';
+        panel.style.maxWidth = 'none';
         panel.querySelectorAll('p,h1,h2,h3,h4').forEach(n => n.style.textAlign = 'left');
         panel.querySelectorAll('svg').forEach(s => {
           s.style.marginLeft = '0';
@@ -2045,5 +2290,175 @@ main.content-main > aside > .glass{
 })();
 </script>
 
+
+<style id="final-countdown-session-qa">
+/* FINAL COUNTDOWN + SESSION LEGEND QA */
+.session-legend { display:flex!important; flex-wrap:wrap!important; align-items:center!important; column-gap:20px!important; row-gap:10px!important; margin:0!important; padding:0!important; }
+.session-legend-item { display:inline-flex!important; align-items:center!important; gap:8px!important; margin:0!important; padding:0!important; white-space:nowrap!important; line-height:1.4!important; }
+.session-legend-item .lang-dot { flex:0 0 auto!important; width:7px!important; height:7px!important; }
+
+.deadline-card { --deadline-pad:24px; overflow:hidden!important; border-radius:18px!important; }
+.deadline-header { min-height:48px!important; padding:0 var(--deadline-pad)!important; gap:16px!important; }
+.deadline-file { min-width:0; }
+.deadline-file-name { margin-left:6px!important; }
+.terminal-dot { width:9px; height:9px; flex:0 0 9px; border-radius:50%; background:rgba(255,255,255,.28); box-shadow:inset 0 0 0 1px rgba(255,255,255,.08); }
+.terminal-dot:nth-child(1){background:#ff5f56}.terminal-dot:nth-child(2){background:#ffbd2e}.terminal-dot:nth-child(3){background:#27c93f}
+.deadline-status { flex:0 0 auto; white-space:nowrap; line-height:1.4; }
+.deadline-body { padding:20px var(--deadline-pad) 24px!important; }
+.deadline-command-wrap { width:100%; overflow-x:auto; scrollbar-width:thin; padding:0!important; }
+.deadline-command { width:max-content; min-width:100%; margin:0!important; padding:0!important; line-height:1.6; }
+.deadline-grid { display:grid!important; grid-template-columns:repeat(4,minmax(0,1fr))!important; gap:12px!important; width:100%!important; max-width:none!important; margin:20px 0 0!important; padding:0!important; }
+.deadline-tile { min-width:0!important; min-height:86px!important; display:flex!important; flex-direction:column!important; align-items:center!important; justify-content:center!important; padding:13px 10px!important; border-radius:14px!important; }
+.deadline-number { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace; font-size:1.65rem!important; line-height:1.05!important; letter-spacing:-.02em; }
+.deadline-label { margin-top:7px!important; font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace; font-size:.58rem!important; line-height:1!important; letter-spacing:.13em!important; font-weight:600; }
+@media(max-width:760px){
+ .deadline-card{--deadline-pad:18px}
+ .deadline-header{min-height:46px!important;gap:12px!important}
+ .deadline-status{font-size:.68rem!important}
+ .deadline-body{padding-top:18px!important;padding-bottom:20px!important}
+ .deadline-grid{gap:8px!important;margin-top:18px!important}
+ .deadline-tile{min-height:78px!important;padding:11px 6px!important}
+ .deadline-number{font-size:1.35rem!important}
+ .session-legend{column-gap:18px!important;row-gap:9px!important}
+}
+@media(max-width:480px){
+ .deadline-status{font-size:.62rem!important}
+ .deadline-file-name{margin-left:4px!important}
+ .deadline-grid{gap:6px!important}
+ .deadline-tile{min-height:72px!important;padding:10px 4px!important}
+ .deadline-number{font-size:1.15rem!important}
+ .deadline-label{margin-top:6px!important;font-size:.52rem!important;letter-spacing:.1em!important}
+}
+@media(prefers-reduced-motion:reduce){.cd-digit.tick{animation:none!important}}
+</style>
+
+<style id="registration-final-qa">
+/* Registration layout: one stable left reading axis, no drifting margins. */
+html {
+  scroll-behavior: smooth !important;
+  scroll-padding-top: 112px !important;
+  -webkit-overflow-scrolling: touch;
+}\n
+body {
+  overscroll-behavior-y: none;
+}\n
+.registration-section {
+  width: min(100% - 32px, 940px) !important;
+  max-width: 940px !important;
+  margin: 0 auto !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  padding-top: clamp(12px, 2vw, 24px) !important;
+  scroll-margin-top: 112px !important;
+}
+
+.registration-section > .glass-strong {
+  width: 100% !important;
+  margin: 0 !important;
+  overflow: visible !important;
+  border-radius: 18px !important;
+}
+
+.registration-section > .glass-strong > .flex {
+  justify-content: flex-start !important;
+  padding-left: 28px !important;
+  padding-right: 28px !important;
+}
+
+#form-wrap {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 30px 28px 34px !important;
+}
+
+#reg-form {
+  width: 100% !important;
+  max-width: 760px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  text-align: left !important;
+}
+
+#reg-form .field-wrap,
+#reg-form > div:not(.form-action),
+#reg-form .cselect {
+  width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+#reg-form .form-action {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  justify-content: flex-start !important;
+  text-align: left !important;
+}
+
+#success-wrap {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 34px 28px 38px !important;
+  text-align: left !important;
+}
+
+#success-wrap .success-hero,
+#success-wrap #check-list,
+#success-wrap > p,
+#success-wrap > button {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+#success-wrap .success-hero { text-align: left !important; }
+#success-wrap .success-title { margin-left: 0 !important; }
+#success-wrap .success-status { justify-content: flex-start !important; }
+
+.registration-section + footer {
+  width: min(100% - 32px, 1152px) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+/* Stable custom-select stacking: opening the faculty menu never shifts the form. */
+#register,
+#register > .glass-strong,
+#form-wrap,
+#reg-form,
+#reg-form > div,
+.cselect {
+  overflow: visible !important;
+}
+
+.cselect { z-index: 20 !important; }
+.cselect.open { z-index: 100 !important; }
+.cselect-panel {
+  z-index: 1000 !important;
+  background: rgba(11,15,24,.96) !important;
+  backdrop-filter: blur(20px) saturate(150%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(150%) !important;
+}
+
+@media (max-width: 640px) {
+  html { scroll-padding-top: 96px !important; }
+  .registration-section {
+    width: min(100% - 20px, 940px) !important;
+    padding-top: 10px !important;
+    scroll-margin-top: 96px !important;
+  }
+  .registration-section > .glass-strong > .flex {
+    padding-left: 18px !important;
+    padding-right: 18px !important;
+  }
+  #form-wrap { padding: 24px 18px 28px !important; }
+  #success-wrap { padding: 28px 18px 30px !important; }
+  .registration-section + footer { width: min(100% - 20px, 1152px) !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto !important; }
+}
+</style>
 </body>
 </html>
