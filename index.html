@@ -6,6 +6,7 @@
 <title>ieee-sb-rusl/github-dev-day</title>
 <meta name="description" content="GitHub Dev Day practical session registration, organized by the IEEE Student Branch of Rajarata University of Sri Lanka." />
 <meta name="color-scheme" content="dark" />
+<meta name="theme-color" content="#05070d" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%23111827' d='M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z'/%3E%3C/svg%3E" />
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -112,6 +113,10 @@ ul{margin:0;padding:0;list-style:none}
 a{color:var(--accent);text-decoration:none}
 a:hover{text-decoration:underline}
 img{max-width:100%;display:block}
+/* form controls do not inherit the page font by default. Element selector on
+   purpose: it stays weaker than .mono, so the monospace reg-number field keeps
+   its face. */
+button,input{font-family:inherit}
 .mono{font-family:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;font-variant-ligatures:none}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 
@@ -154,54 +159,132 @@ img{max-width:100%;display:block}
 }
 
 /* =========================================================================
-   2b. LIVE TERMINAL BACKGROUND
+   2b. LIVE TERMINAL BACKGROUND  (v2)
    A looping git session behind everything. It sits above the orbs and below
    the noise, so every .glass surface blurs it through backdrop-filter.
-   Cost control: fixed layer, `contain`, capped line count, and only
-   transform/opacity ever animates. Paused while the tab is hidden.
+
+   What changed in v2
+   - Syntax colour: prompt (user / path / branch), git + gh commands,
+     sub-commands, flags, strings, URLs, diff +/- lines, commit graph.
+   - Stable geometry: every line is exactly one --term-lh tall, so the feed
+     can slide up by a known distance. New lines glide in on a transform
+     instead of snapping.
+   - Fills on load (pre-rendered scrollback) instead of starting empty.
+   - Fades in once, and wipes itself with a real `clear` at the end of each
+     loop instead of repeating forever.
+   - Mobile / webview: the layer is sized to the LARGE viewport (100lvh) so
+     the URL bar collapsing never resizes it; will-change is only on the two
+     feeds, never on every line; the JS paces itself and pauses while the
+     page is scrolling on touch devices.
+   Cost control: fixed layer, `contain:strict`, capped line count, and only
+   transform/opacity ever animates.
    ========================================================================= */
 .bg-terminal{
-  position:fixed;inset:0;z-index:-2;
+  position:fixed;top:0;left:0;right:0;
+  height:100vh;height:100lvh;
+  z-index:-2;
   pointer-events:none;overflow:hidden;contain:strict;
   display:grid;grid-template-columns:1fr;
-  font-family:"JetBrains Mono",ui-monospace,monospace;
-  font-size:12.5px;line-height:24px;
-  opacity:.16;
-  -webkit-mask-image:linear-gradient(180deg,transparent 0,#000 14%,#000 80%,transparent 100%);
-  mask-image:linear-gradient(180deg,transparent 0,#000 14%,#000 80%,transparent 100%);
+
+  --term-lh:24px;
+  --term-alpha:.16;
+
+  font-family:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  font-size:12.5px;line-height:var(--term-lh);
+  font-variant-ligatures:none;
+  text-rendering:optimizeSpeed;
+  -webkit-user-select:none;user-select:none;
+
+  /* fades in once the script has filled the screen */
+  opacity:0;
+  transition:opacity 900ms var(--ease);
+
+  /* soft top fade only; the bottom stays solid until the last 12% so the
+     line being typed is always readable */
+  -webkit-mask-image:linear-gradient(180deg,transparent 0,#000 14%,#000 88%,transparent 100%);
+  mask-image:linear-gradient(180deg,transparent 0,#000 14%,#000 88%,transparent 100%);
 }
+.bg-terminal[data-live]{opacity:var(--term-alpha)}
 .bg-term-col{position:relative;overflow:hidden}
 .bg-term-col:nth-child(2){display:none}
+
+/* bottom-anchored column: new lines push older ones up, and lines that leave
+   the top are removed by the script. Sits at 11% so it clears mobile toolbars */
 .bg-term-feed{
-  position:absolute;left:var(--s-3);right:var(--s-3);bottom:var(--s-3);
+  position:absolute;left:var(--s-3);right:var(--s-3);bottom:11%;
   display:flex;flex-direction:column;
+  will-change:transform;
 }
+.bg-term-feed.is-clearing{opacity:0;transition:opacity 280ms var(--ease)}
+
+/* one line = exactly one --term-lh, so slide distance is always known */
 .bg-term-line{
-  white-space:pre;color:rgba(255,255,255,.3);
-  will-change:transform,opacity;
-  animation:term-line-in var(--t-fast) var(--ease) both;
+  flex:0 0 var(--term-lh);
+  height:var(--term-lh);
+  white-space:pre;overflow:hidden;
+  color:rgba(255,255,255,.3);
+  contain:layout style;
+  animation:term-line-in 160ms var(--ease) both;
 }
-@keyframes term-line-in{from{opacity:0;transform:translate3d(0,6px,0)}to{opacity:1;transform:translate3d(0,0,0)}}
-.bg-term-line .prompt{color:var(--accent)}
+.bg-term-line.is-still{animation:none}
+@keyframes term-line-in{from{opacity:0}to{opacity:1}}
+
+/* line kinds */
 .bg-term-line.is-cmd{color:#e2e9f6}
+.bg-term-line.is-out{color:rgba(255,255,255,.34)}
 .bg-term-line.is-ok{color:var(--success)}
 .bg-term-line.is-warn{color:var(--attention)}
+.bg-term-line.is-err{color:var(--danger)}
 .bg-term-line.is-dim{color:rgba(255,255,255,.24)}
+.bg-term-line.is-meta{color:rgba(255,255,255,.42)}
+.bg-term-line.is-hunk{color:var(--grad-1)}
+.bg-term-line.is-add{color:var(--success)}
+.bg-term-line.is-del{color:var(--danger)}
+
+/* prompt */
+.bg-terminal .pr-user{color:var(--success)}
+.bg-terminal .pr-cwd{color:var(--accent)}
+.bg-terminal .pr-br{color:var(--attention)}
+.bg-terminal .pr-sign{color:var(--grad-2)}
+
+/* command syntax */
+.bg-terminal .tk-bin{color:var(--grad-1)}
+.bg-terminal .tk-sub{color:#fff}
+.bg-terminal .tk-flag{color:var(--grad-2)}
+.bg-terminal .tk-str{color:var(--success)}
+.bg-terminal .tk-url{color:var(--accent)}
+.bg-terminal .tk-op{color:var(--grad-3)}
+
+/* inline segments (commit graph, diffstat) */
+.bg-terminal .t-dim{color:rgba(255,255,255,.24)}
+.bg-terminal .t-add{color:var(--success)}
+.bg-terminal .t-del{color:var(--danger)}
+.bg-terminal .t-hash{color:var(--attention)}
+.bg-terminal .t-ref{color:var(--success)}
+.bg-terminal .t-head{color:#7fe3ff}
+.bg-terminal .t-g1{color:var(--grad-1)}
+.bg-terminal .t-g2{color:var(--grad-3)}
+
+/* block caret on the line being typed */
 .bg-term-line.is-typing::after{
-  content:"";display:inline-block;width:7px;height:1em;margin-left:2px;
-  background:var(--accent);vertical-align:-2px;
+  content:"";display:inline-block;width:.62em;height:1.1em;margin-left:1px;
+  background:var(--accent);vertical-align:-.2em;
+  box-shadow:0 0 10px rgba(138,184,255,.7);
   animation:blink 1.05s steps(1) infinite;
 }
+.bg-terminal[data-perf="lite"] .bg-term-line.is-typing::after{box-shadow:none}
+
 @media (min-width:1280px){
   .bg-terminal{grid-template-columns:1fr 1fr}
   .bg-term-col:nth-child(2){display:block;opacity:.55}
 }
 @media (max-width:768px){
-  .bg-terminal{font-size:11px;line-height:22px;opacity:.11}
+  .bg-terminal{--term-lh:22px;--term-alpha:.11;font-size:11px}
+  .bg-term-feed{left:var(--s-2);right:var(--s-2)}
 }
 @media (prefers-reduced-motion:reduce){
-  .bg-terminal{opacity:.1}
-  .bg-term-line{animation:none;opacity:1;transform:none}
+  .bg-terminal{--term-alpha:.1;transition:none}
+  .bg-term-line{animation:none}
   .bg-term-line.is-typing::after{display:none}
 }
 
@@ -230,7 +313,7 @@ img{max-width:100%;display:block}
   border:1px solid var(--border);border-radius:var(--r-pill);
   background:var(--glass-strong);
   backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
-  color:var(--fg);font:500 .875rem/1.25 inherit;
+  color:var(--fg);font-weight:500;font-size:.875rem;line-height:1.25;
   cursor:pointer;white-space:nowrap;
   transition:transform var(--t-fast) var(--ease),
              opacity var(--t-fast) var(--ease),
@@ -257,7 +340,7 @@ img{max-width:100%;display:block}
   border-radius:var(--r-pill);
   background:rgba(110,168,255,.08);
   border:1px solid rgba(130,184,255,.2);
-  color:#b9d3ff;font:500 .75rem/1.4 inherit;
+  color:#b9d3ff;font-weight:500;font-size:.75rem;line-height:1.4;
   transition:transform var(--t-fast) var(--ease),background-color var(--t-fast) var(--ease);
   will-change:transform;
 }
@@ -332,7 +415,7 @@ img{max-width:100%;display:block}
   min-height:var(--tap);padding-inline:var(--s-2);
   border:1px solid var(--border);border-radius:var(--r-pill);
   background:var(--glass);color:var(--fg-muted);
-  font:500 .8125rem/1 inherit;white-space:nowrap;
+  font-weight:500;font-size:.8125rem;line-height:1;white-space:nowrap;
 }
 
 /* tabs: horizontal scroller, 44px tall, 8px icon/label gap */
@@ -349,7 +432,7 @@ img{max-width:100%;display:block}
   display:inline-flex;align-items:center;gap:var(--s-1);
   flex:0 0 auto;scroll-snap-align:start;
   min-height:var(--tap);padding-block:var(--s-1);
-  color:var(--fg-muted);font:500 .875rem/1 inherit;
+  color:var(--fg-muted);font-weight:500;font-size:.875rem;line-height:1;
   background:none;border:0;cursor:pointer;
   transition:color var(--t-fast) var(--ease);
 }
@@ -386,7 +469,7 @@ img{max-width:100%;display:block}
   background:rgba(255,255,255,.065);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.16);
   backdrop-filter:blur(18px) saturate(170%);-webkit-backdrop-filter:blur(18px) saturate(170%);
-  color:#eef6ff;font:600 .78rem/1 inherit;
+  color:#eef6ff;font-weight:600;font-size:.78rem;line-height:1;
 }
 .hero-title{
   margin-block:var(--s-3);
@@ -619,7 +702,7 @@ img{max-width:100%;display:block}
   border:1px solid rgba(255,255,255,.085);border-radius:var(--r-md);
   background:rgba(255,255,255,.042);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.035);
-  color:var(--fg);font:400 .9375rem/1.4 inherit;
+  color:var(--fg);font-weight:400;font-size:.9375rem;line-height:1.4;
   transition:border-color var(--t-fast) var(--ease),box-shadow var(--t-fast) var(--ease);
 }
 .input::placeholder{color:var(--fg-subtle)}
@@ -638,7 +721,7 @@ img{max-width:100%;display:block}
   width:100%;min-height:52px;padding:var(--s-2);
   border:1px solid rgba(255,255,255,.085);border-radius:var(--r-md);
   background:rgba(255,255,255,.042);
-  color:var(--fg);font:400 .9375rem/1.4 inherit;text-align:left;
+  color:var(--fg);font-weight:400;font-size:.9375rem;line-height:1.4;text-align:left;
   cursor:pointer;user-select:none;
   transition:border-color var(--t-fast) var(--ease),box-shadow var(--t-fast) var(--ease);
 }
@@ -824,6 +907,46 @@ img{max-width:100%;display:block}
   .orb{animation:none}
   .contrib-cell{opacity:1}
   .job-step{opacity:1;transform:none}
+}
+
+/* =========================================================================
+   12. MOBILE + WEBVIEW SMOOTHNESS
+   Additive only. Nothing here applies on a desktop pointer at desktop width,
+   except the notch padding, which is a no-op without a notch.
+   ========================================================================= */
+
+/* viewport-fit=cover lets the page draw under notches and home bars, so the
+   content needs the safe-area insets or it hides behind them in landscape and
+   in full-screen webviews. */
+@supports (padding:max(0px)){
+  .shell,.register{
+    padding-left:max(var(--gutter),env(safe-area-inset-left));
+    padding-right:max(var(--gutter),env(safe-area-inset-right));
+  }
+  .site-footer{padding-bottom:max(var(--s-4),env(safe-area-inset-bottom))}
+}
+
+/* touch screens keep :hover after a tap, which leaves cards lifted and tab
+   underlines stuck. Neutralise hover motion where there is no hover. */
+@media (hover:none){
+  .btn:hover,.topic:hover,.side-card:hover{transform:none}
+  .btn:hover{border-color:var(--border)}
+  .side-card:hover{border-color:var(--border-muted)}
+  .repo-tab:hover::after{transform:scaleX(0)}
+  .repo-tab[aria-current="page"]:hover::after{transform:scaleX(1)}
+  .cselect-option:hover:not(.is-active){background:transparent}
+}
+
+@media (max-width:768px){
+  /* iOS zooms the page when a focused field is under 16px */
+  .input,.cselect-trigger{font-size:16px}
+  /* a full-screen mix-blend layer at 2% opacity costs a whole-page blend per
+     frame and is not visible on a phone */
+  .noise{display:none}
+  /* smaller blur radius, same look, far cheaper to composite */
+  .orb{filter:blur(44px)}
+  /* dozens of permanent GPU layers is what makes webviews stutter */
+  .btn,.topic,.side-card,.reveal{will-change:auto}
 }
 </style>
 </head>
@@ -1336,24 +1459,34 @@ img{max-width:100%;display:block}
 
   /* ---------------------------------------------------------------------
      Hero orb parallax (desktop, transform only)
+
+     FIX: the orbs already run a CSS `transform` animation, and an animation
+     always beats an inline `transform`, so the old inline write never showed
+     and the rAF loop just burned a frame budget forever. The individual
+     `translate` property composes with the animation instead, so the
+     parallax now works, and the loop stops itself once the orbs settle.
   --------------------------------------------------------------------- */
-  if (!coarse && !reduceMotion) {
+  if (!coarse && !reduceMotion && window.CSS && CSS.supports && CSS.supports("translate", "1px 1px")) {
     var orbs = [$(".orb-1"), $(".orb-2"), $(".orb-3")];
     var depth = [[40, 30], [-30, 24], [20, -20]];
-    var tx = 0, ty = 0, cx = 0, cy = 0;
-    window.addEventListener("mousemove", function (e) {
-      tx = e.clientX / window.innerWidth - 0.5;
-      ty = e.clientY / window.innerHeight - 0.5;
-    }, { passive: true });
-    (function loop() {
+    var tx = 0, ty = 0, cx = 0, cy = 0, orbRunning = false;
+
+    var orbFrame = function () {
       cx += (tx - cx) * 0.04;
       cy += (ty - cy) * 0.04;
       for (var i = 0; i < orbs.length; i++) {
         if (!orbs[i]) continue;
-        orbs[i].style.transform = "translate3d(" + (cx * depth[i][0]) + "px," + (cy * depth[i][1]) + "px,0)";
+        orbs[i].style.translate = (cx * depth[i][0]).toFixed(2) + "px " + (cy * depth[i][1]).toFixed(2) + "px";
       }
-      requestAnimationFrame(loop);
-    })();
+      if (Math.abs(tx - cx) > 0.0005 || Math.abs(ty - cy) > 0.0005) requestAnimationFrame(orbFrame);
+      else orbRunning = false;
+    };
+
+    window.addEventListener("mousemove", function (e) {
+      tx = e.clientX / window.innerWidth - 0.5;
+      ty = e.clientY / window.innerHeight - 0.5;
+      if (!orbRunning) { orbRunning = true; requestAnimationFrame(orbFrame); }
+    }, { passive: true });
   }
 
   /* ---------------------------------------------------------------------
@@ -1482,7 +1615,11 @@ img{max-width:100%;display:block}
   });
   trigger.addEventListener("keydown", function (e) {
     if (e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "Enter" || e.key === " ") {
-      e.preventDefault(); openPanel(); panel.focus();
+      e.preventDefault(); openPanel();
+      /* FIX: the panel is still visibility:hidden on the exact frame it
+         opens, and a hidden element refuses focus, so arrow-key navigation
+         silently did nothing. Focus it on the next frame instead. */
+      requestAnimationFrame(function () { panel.focus({ preventScroll: true }); });
     }
   });
   panel.addEventListener("keydown", function (e) {
@@ -1504,6 +1641,12 @@ img{max-width:100%;display:block}
   document.addEventListener("click", function (e) {
     if (!cselect.contains(e.target)) closePanel(false);
   });
+  /* FIX: iOS Safari and many webviews do not fire `click` on the document
+     when the tap lands on a non-interactive element, so the menu could not
+     be dismissed by tapping outside it. touchstart covers that case. */
+  document.addEventListener("touchstart", function (e) {
+    if (cselect.classList.contains("is-open") && !cselect.contains(e.target)) closePanel(false);
+  }, { passive: true });
 
   /* ---------------------------------------------------------------------
      Form: validation, submit states, view swap, reset
@@ -1685,134 +1828,437 @@ img{max-width:100%;display:block}
 </script>
 <script>
 /* =========================================================================
-   LIVE TERMINAL BACKGROUND — a looping git session, typed one char at a time.
+   LIVE TERMINAL BACKGROUND  (v2)
+   A looping git session, typed one character burst at a time.
 
-   Deliberately cheap: no canvas, no rAF loop, no layout thrash. Each line is
-   one text node appended to a bottom-anchored flex column, so new lines push
-   older ones up out of the clip region on their own. Lines that leave the
-   viewport are dropped, capping the DOM. Nothing but transform and opacity
-   animates, and the whole thing stops when the tab is backgrounded.
+   - Colour: the prompt, command, flags, strings, diffs and commit graph are
+     each tokenised once and coloured with CSS classes.
+   - Motion: every line is exactly one line-height tall and the feed is
+     bottom-anchored, so when a line is added the feed is slid up with a
+     Web Animations transform (additive, so overlapping slides never jump).
+   - Loop: the screen is pre-filled on load, and the session ends with a real
+     `clear` that fades the feed out before starting again.
+   - Cost: no canvas, no rAF loop, no layout reads per line. The DOM is capped
+     to what fits on screen. Nothing runs while the tab is hidden, and on
+     touch devices the typing also pauses while the page is scrolling, so
+     scrolling never competes with the terminal for the main thread.
+   - Phones and webviews: slower, chunkier typing, a compact prompt so the
+     command stays visible, and one column only.
    ========================================================================= */
 (function () {
   "use strict";
 
-  var layer = document.getElementById("bg-terminal");
+  var doc = document, win = window;
+  var layer = doc.getElementById("bg-terminal");
   if (!layer) return;
-
-  var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  var PROMPT = "ieee-sb-rusl ~/github-dev-day $ ";
-  var MAX_LINES = 48;
-
-  /* The session. cmd = typed, everything else prints. */
-  var SESSION = [
-    { k: "cmd",  t: "git clone https://github.com/ieee-sb-rusl/github-dev-day.git" },
-    { k: "dim",  t: "Cloning into 'github-dev-day'..." },
-    { k: "dim",  t: "remote: Enumerating objects: 148, done." },
-    { k: "dim",  t: "remote: Compressing objects: 100% (96/96), done." },
-    { k: "dim",  t: "Receiving objects: 100% (148/148), 62.40 KiB | 3.12 MiB/s, done." },
-    { k: "cmd",  t: "git switch -c feature/registration-form" },
-    { k: "ok",   t: "Switched to a new branch 'feature/registration-form'" },
-    { k: "cmd",  t: "git status --short" },
-    { k: "warn", t: " M index.html" },
-    { k: "warn", t: "?? assets/ieee-sb-rusl-white.png" },
-    { k: "cmd",  t: "git add -A" },
-    { k: "cmd",  t: 'git commit -m "Refactor registration form onto the 8pt grid"' },
-    { k: "out",  t: "[feature/registration-form 4f3a9c1] Refactor registration form onto the 8pt grid" },
-    { k: "dim",  t: " 3 files changed, 214 insertions(+), 86 deletions(-)" },
-    { k: "cmd",  t: "git push -u origin feature/registration-form" },
-    { k: "dim",  t: "Enumerating objects: 14, done." },
-    { k: "dim",  t: "Writing objects: 100% (8/8), 4.21 KiB | 4.21 MiB/s, done." },
-    { k: "dim",  t: "remote: Resolving deltas: 100% (5/5), completed with 3 local objects." },
-    { k: "ok",   t: "remote: Create a pull request for 'feature/registration-form' on GitHub" },
-    { k: "cmd",  t: 'gh pr create --title "Registration form" --reviewer @ieee-sb-rusl/web' },
-    { k: "ok",   t: "https://github.com/ieee-sb-rusl/github-dev-day/pull/24" },
-    { k: "cmd",  t: "gh pr checks 24" },
-    { k: "ok",   t: "\u2713  build          1m 04s" },
-    { k: "ok",   t: "\u2713  lighthouse    0m 42s" },
-    { k: "ok",   t: "\u2713  a11y-audit    0m 18s" },
-    { k: "cmd",  t: "git switch main && git pull --ff-only" },
-    { k: "dim",  t: "Fast-forward. Already up to date." },
-    { k: "cmd",  t: "git merge --no-ff feature/registration-form" },
-    { k: "ok",   t: "Merge made by the 'ort' strategy." },
-    { k: "cmd",  t: "git log --oneline -3" },
-    { k: "dim",  t: "8c21de0 Merge branch 'feature/registration-form'" },
-    { k: "dim",  t: "4f3a9c1 Refactor registration form onto the 8pt grid" },
-    { k: "dim",  t: "a90b117 Add GitHub Dev Day README" },
-    { k: "cmd",  t: "git push origin main" },
-    { k: "ok",   t: "main -> main  \u00b7  150 seats open" }
-  ];
-
   var feeds = Array.prototype.slice.call(layer.querySelectorAll(".bg-term-feed"));
+  if (!feeds.length) return;
 
-  function addLine(feed, kind) {
-    var el = document.createElement("div");
-    el.className = "bg-term-line" + (kind ? " is-" + kind : "");
-    feed.appendChild(el);
-    while (feed.childElementCount > MAX_LINES) feed.removeChild(feed.firstElementChild);
+  /* ---------------------------------------------------------------------
+     Environment
+  --------------------------------------------------------------------- */
+  function mq(q) {
+    return win.matchMedia ? win.matchMedia(q) : { matches: false };
+  }
+  function listen(m, fn) {
+    if (m.addEventListener) m.addEventListener("change", fn);
+    else if (m.addListener) m.addListener(fn);
+  }
+  var reduceMQ = mq("(prefers-reduced-motion: reduce)");
+  var coarseMQ = mq("(pointer: coarse)");
+  var narrowMQ = mq("(max-width: 768px)");
+  var wideMQ = mq("(min-width: 1280px)");
+
+  var ua = (win.navigator && navigator.userAgent) || "";
+  var isWebview =
+    /; wv\)|FBAN|FBAV|Instagram|MicroMessenger|Line\/|GSA\/|WebView/i.test(ua) ||
+    (/iP(hone|ad|od)/.test(ua) && !/Safari\//.test(ua));
+  var lowEnd =
+    (navigator.deviceMemory && navigator.deviceMemory <= 2) ||
+    (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2) ||
+    (navigator.connection && navigator.connection.saveData);
+
+  function isLite() {
+    return !!(narrowMQ.matches || coarseMQ.matches || isWebview || lowEnd);
+  }
+  function pace() {
+    return isLite()
+      ? { ch: 62, bMin: 2, bMax: 4, out: 1.5, shift: 150 }
+      : { ch: 24, bMin: 1, bMax: 3, out: 1, shift: 190 };
+  }
+  function rand(a, b) { return a + Math.random() * (b - a); }
+
+  /* ---------------------------------------------------------------------
+     DOM helpers
+  --------------------------------------------------------------------- */
+  function mk(tag, cls) {
+    var el = doc.createElement(tag);
+    if (cls) el.className = cls;
+    return el;
+  }
+  function span(cls, text) {
+    var s = mk("span", cls);
+    s.textContent = text;
+    return s;
+  }
+  function txt(t) { return doc.createTextNode(t); }
+
+  /* ---------------------------------------------------------------------
+     The session
+     C  = a typed command      L = a printed line      S = a line of segments
+     C options: cwd / br set the prompt AFTER the command runs, noPre keeps
+     the entry out of the pre-filled scrollback, clear wipes the screen.
+  --------------------------------------------------------------------- */
+  function C(t, o) {
+    var e = { k: "cmd", t: t };
+    if (o) for (var p in o) if (Object.prototype.hasOwnProperty.call(o, p)) e[p] = o[p];
+    return e;
+  }
+  function L(k, t) { return { k: k, t: t }; }
+  function S(s) { return { k: "seg", s: s }; }
+
+  var SESSION = [
+    C("git clone https://github.com/ieee-sb-rusl/github-dev-day.git"),
+    L("dim", "Cloning into 'github-dev-day'..."),
+    L("dim", "remote: Enumerating objects: 148, done."),
+    L("dim", "remote: Counting objects: 100% (148/148), done."),
+    L("dim", "remote: Compressing objects: 100% (96/96), done."),
+    L("dim", "Receiving objects: 100% (148/148), 62.40 KiB | 3.12 MiB/s, done."),
+    L("dim", "Resolving deltas: 100% (61/61), done."),
+    C("cd github-dev-day", { cwd: "~/github-dev-day", br: "main" }),
+    C("git switch -c feature/registration-form", { br: "feature/registration-form" }),
+    L("ok", "Switched to a new branch 'feature/registration-form'"),
+    C("git stauts"),
+    L("err", "git: 'stauts' is not a git command. See 'git --help'."),
+    L("dim", "The most similar command is"),
+    L("out", "        status"),
+    C("git status --short"),
+    L("warn", " M index.html"),
+    L("warn", "?? assets/ieee-sb-rusl-white.png"),
+    C("git diff --unified=0 index.html"),
+    L("meta", "diff --git a/index.html b/index.html"),
+    L("hunk", "@@ -42,7 +42,7 @@ :root{"),
+    L("del", "-  --gap:10px;"),
+    L("add", "+  --s-1:8px;"),
+    L("hunk", "@@ -118,3 +118,3 @@ .bg-terminal{"),
+    L("del", "-  font-size:13px;"),
+    L("add", "+  font-size:12.5px;"),
+    C("git add -A"),
+    C('git commit -m "Refactor registration form onto the 8pt grid"'),
+    S([["", "["], ["ref", "feature/registration-form"], ["", " "], ["hash", "4f3a9c1"], ["", "] Refactor registration form onto the 8pt grid"]]),
+    S([["dim", " 3 files changed, "], ["add", "214 insertions(+)"], ["dim", ", "], ["del", "86 deletions(-)"]]),
+    C("git push -u origin feature/registration-form"),
+    L("dim", "Enumerating objects: 14, done."),
+    L("dim", "Writing objects: 100% (8/8), 4.21 KiB | 4.21 MiB/s, done."),
+    L("dim", "remote: Resolving deltas: 100% (5/5), completed with 3 local objects."),
+    L("ok", "remote: Create a pull request for 'feature/registration-form' on GitHub"),
+    L("dim", "branch 'feature/registration-form' set up to track 'origin/feature/registration-form'."),
+    C('gh pr create --title "Registration form" --reviewer @ieee-sb-rusl/web'),
+    L("ok", "https://github.com/ieee-sb-rusl/github-dev-day/pull/24"),
+    C("gh pr checks 24"),
+    L("ok", "\u2713  build          1m 04s"),
+    L("ok", "\u2713  lighthouse    0m 42s"),
+    L("ok", "\u2713  a11y-audit    0m 18s"),
+    C("gh pr review 24 --approve"),
+    L("ok", "\u2713 Approved pull request #24"),
+    C("git switch main && git pull --ff-only", { br: "main" }),
+    L("dim", "Already up to date."),
+    C("git merge --no-ff feature/registration-form"),
+    L("ok", "Merge made by the 'ort' strategy."),
+    C("git log --graph --oneline -4"),
+    S([["g1", "*   "], ["hash", "8c21de0 "], ["head", "(HEAD -> main) "], ["", "Merge branch 'feature/registration-form'"]]),
+    S([["g1", "|\\"]]),
+    S([["g1", "| "], ["g2", "* "], ["hash", "4f3a9c1 "], ["ref", "(feature/registration-form) "], ["", "Refactor registration form onto the 8pt grid"]]),
+    S([["g1", "|/"]]),
+    S([["g1", "* "], ["hash", "a90b117 "], ["", "Add GitHub Dev Day README"]]),
+    C("git push origin main"),
+    L("ok", "main -> main  \u00b7  150 seats open"),
+    C("cd ..", { cwd: "~", br: null, noPre: true }),
+    C("clear", { clear: true, noPre: true })
+  ];
+  var LEN = SESSION.length;
+
+  /* Split a command into coloured tokens once, up front. */
+  function tokenize(str) {
+    var re = /"[^"]*"|'[^']*'|\s+|[^\s"']+/g, m, out = [];
+    var expectBin = true, expectSub = false, bin = "";
+    while ((m = re.exec(str))) {
+      var t = m[0], c = "";
+      if (/^\s/.test(t)) { out.push({ t: t, c: "" }); continue; }
+      if (t === "&&" || t === "||" || t === "|" || t === ";") { c = "tk-op"; expectBin = true; expectSub = false; }
+      else if (expectBin) { c = "tk-bin"; bin = t; expectBin = false; expectSub = true; }
+      else if (t.charAt(0) === "-") { c = "tk-flag"; }
+      else if (t.charAt(0) === '"' || t.charAt(0) === "'") { c = "tk-str"; }
+      else if (t.indexOf("://") > -1) { c = "tk-url"; }
+      else if (expectSub && (bin === "git" || bin === "gh")) { c = "tk-sub"; expectSub = false; }
+      out.push({ t: t, c: c });
+    }
+    return out;
+  }
+
+  /* Give every command the prompt state it is typed at, and its tokens. */
+  (function annotate() {
+    var cwd = "~", br = null;
+    SESSION.forEach(function (e) {
+      if (e.k !== "cmd") return;
+      e._cwd = cwd;
+      e._br = br;
+      e._tok = tokenize(e.t);
+      if (e.cwd !== undefined) cwd = e.cwd;
+      if (e.br !== undefined) br = e.br;
+    });
+  })();
+
+  function snap(idx) {
+    idx = ((idx % LEN) + LEN) % LEN;
+    while (SESSION[idx].k !== "cmd" || SESSION[idx].noPre) idx = (idx + 1) % LEN;
+    return idx;
+  }
+
+  /* ---------------------------------------------------------------------
+     Rendering
+  --------------------------------------------------------------------- */
+  /* Compact prompt on narrow screens so the command stays on screen. */
+  function promptFrag(e) {
+    var f = doc.createDocumentFragment();
+    var narrow = narrowMQ.matches;
+    var showCwd = !narrow || !e._br;
+    if (!narrow) { f.appendChild(span("pr-user", "ieee-sb-rusl")); f.appendChild(txt(" ")); }
+    if (showCwd) f.appendChild(span("pr-cwd", e._cwd));
+    if (e._br) {
+      var b = e._br;
+      if (narrow && b.length > 12) b = b.split("/")[0] + "/\u2026";
+      if (showCwd) f.appendChild(txt(" "));
+      f.appendChild(span("pr-br", "(" + b + ")"));
+    }
+    f.appendChild(span("pr-sign", " $ "));
+    return f;
+  }
+
+  /* A finished line: used for scrollback and for printed output. */
+  function renderEntry(e, still) {
+    var el = mk("div", "bg-term-line" + (e.k === "seg" ? "" : " is-" + e.k) + (still ? " is-still" : ""));
+    if (e.k === "cmd") {
+      el.appendChild(promptFrag(e));
+      e._tok.forEach(function (t) { el.appendChild(t.c ? span(t.c, t.t) : txt(t.t)); });
+    } else if (e.k === "seg") {
+      e.s.forEach(function (s) { el.appendChild(s[0] ? span("t-" + s[0], s[1]) : txt(s[1])); });
+    } else {
+      el.textContent = e.t;
+    }
     return el;
   }
 
-  /* Static transcript when motion is reduced: same texture, zero animation. */
-  if (reduceMotion) {
-    feeds.forEach(function (feed, f) {
-      for (var i = 0; i < 26; i++) {
-        var entry = SESSION[(i + f * 11) % SESSION.length];
-        var el = addLine(feed, entry.k === "cmd" ? "cmd" : entry.k);
-        el.textContent = (entry.k === "cmd" ? PROMPT : "") + entry.t;
-      }
-    });
+  /* Pre-render the lines that came just before `endIdx`, oldest first. */
+  function prefillFeed(feed, endIdx, count) {
+    var picked = [], j = endIdx - 1, guard = 0;
+    while (picked.length < count && guard < count * 3) {
+      var en = SESSION[((j % LEN) + LEN) % LEN];
+      j--; guard++;
+      if (en.noPre) continue;
+      picked.push(en);
+    }
+    var frag = doc.createDocumentFragment();
+    for (var q = picked.length - 1; q >= 0; q--) frag.appendChild(renderEntry(picked[q], true));
+    feed.appendChild(frag);
+  }
+
+  /* ---------------------------------------------------------------------
+     Sizing (only re-measured on resize, never per line)
+  --------------------------------------------------------------------- */
+  var LH = 24, maxLines = 48;
+  function measure() {
+    var lh = parseFloat(win.getComputedStyle(layer).lineHeight);
+    if (lh > 0) LH = lh;
+    var h = layer.clientHeight || win.innerHeight || 800;
+    maxLines = Math.min(90, Math.max(30, Math.ceil(h / LH) + 6));
+    layer.setAttribute("data-perf", isLite() ? "lite" : "full");
+  }
+  measure();
+
+  var S1 = snap(Math.floor(LEN * 0.42));
+  var S2 = snap(Math.floor(LEN * 0.8));
+
+  /* Reduced motion: a static, coloured transcript and nothing else. */
+  if (reduceMQ.matches) {
+    prefillFeed(feeds[0], S1, maxLines - 4);
+    if (feeds[1]) prefillFeed(feeds[1], S2, maxLines - 4);
+    layer.setAttribute("data-live", "");
     return;
   }
 
-  function runFeed(feed, startIndex, charMs) {
-    var i = startIndex;
-    var timer = null;
+  /* ---------------------------------------------------------------------
+     Pause rules: hidden tab always; scrolling too on touch / lite devices
+  --------------------------------------------------------------------- */
+  var paused = { hidden: !!doc.hidden, scroll: false };
+  function isPaused() { return paused.hidden || paused.scroll; }
 
-    function wait(ms, next) { timer = setTimeout(next, ms); }
+  var runners = [];
+  function kick() { runners.forEach(function (r) { r.resume(); }); }
 
-    function nextEntry() {
-      if (document.hidden) { wait(400, nextEntry); return; }
+  doc.addEventListener("visibilitychange", function () {
+    paused.hidden = !!doc.hidden;
+    if (!paused.hidden) kick();
+  });
+  win.addEventListener("pageshow", function () {
+    paused.hidden = !!doc.hidden;
+    kick();
+  });
 
-      var entry = SESSION[i % SESSION.length];
-      i++;
+  var scrollTimer = 0;
+  win.addEventListener("scroll", function () {
+    if (!isLite()) return;
+    paused.scroll = true;
+    clearTimeout(scrollTimer);
+    scrollTimer = setTimeout(function () { paused.scroll = false; kick(); }, 180);
+  }, { passive: true });
 
-      if (entry.k !== "cmd") {
-        var out = addLine(feed, entry.k);
-        out.textContent = entry.t;
-        wait(90 + Math.random() * 220, nextEntry);
-        return;
+  /* ---------------------------------------------------------------------
+     One runner per column
+  --------------------------------------------------------------------- */
+  function createRunner(feed, startIdx, slow) {
+    var i = startIdx, timer = 0, pending = null, alive = false;
+
+    /* schedule fn; if the page is paused when it fires, park it for resume() */
+    function later(ms, fn) {
+      pending = null;
+      clearTimeout(timer);
+      timer = setTimeout(function () {
+        timer = 0;
+        if (!alive) return;
+        if (isPaused()) { pending = fn; return; }
+        fn();
+      }, ms);
+    }
+
+    function trim() {
+      while (feed.childElementCount > maxLines) feed.removeChild(feed.firstElementChild);
+    }
+
+    /* Lines are appended at the bottom of a bottom-anchored feed, which moves
+       everything above up by one line instantly. Play the slide back from
+       +LH to 0 so it reads as scrolling. composite:add keeps overlapping
+       slides continuous instead of restarting from a jump. */
+    function shift() {
+      if (!feed.animate) return;
+      try {
+        feed.animate(
+          [{ transform: "translate3d(0," + LH + "px,0)" }, { transform: "translate3d(0,0,0)" }],
+          { duration: pace().shift, easing: "cubic-bezier(.4,0,.2,1)", composite: "add" }
+        );
+      } catch (err) { /* older webviews: the line simply appears */ }
+    }
+
+    function push(el) {
+      feed.appendChild(el);
+      trim();
+      shift();
+    }
+
+    function typeInto(line, e, done) {
+      var toks = e._tok, nodes = [], k;
+      for (k = 0; k < toks.length; k++) {
+        var n = txt("");
+        if (toks[k].c) { var s = mk("span", toks[k].c); s.appendChild(n); line.appendChild(s); }
+        else line.appendChild(n);
+        nodes.push(n);
       }
-
-      var line = addLine(feed, "cmd");
-      line.classList.add("is-typing");
-      var prompt = document.createElement("span");
-      prompt.className = "prompt";
-      prompt.textContent = PROMPT;
-      var typed = document.createTextNode("");
-      line.appendChild(prompt);
-      line.appendChild(typed);
-
-      var pos = 0;
-      (function type() {
-        if (pos >= entry.t.length) {
-          line.classList.remove("is-typing");
-          wait(320 + Math.random() * 260, nextEntry);
-          return;
+      var ti = 0, tc = 0, p = pace();
+      (function step() {
+        if (ti >= toks.length) { done(); return; }
+        var burst = p.bMin + Math.floor(Math.random() * (p.bMax - p.bMin + 1));
+        while (burst > 0 && ti < toks.length) {
+          var t = toks[ti].t;
+          var take = Math.min(burst, t.length - tc);
+          nodes[ti].nodeValue += t.substr(tc, take);
+          tc += take; burst -= take;
+          if (tc >= t.length) { ti++; tc = 0; }
         }
-        /* type in small bursts so it reads like a person, not a metronome */
-        var burst = 1 + Math.floor(Math.random() * 3);
-        typed.nodeValue += entry.t.slice(pos, pos + burst);
-        pos += burst;
-        wait(charMs + Math.random() * charMs, type);
+        later(p.ch * slow * (1 + Math.random()), step);
       })();
     }
 
-    wait(Math.random() * 600, nextEntry);
+    function clearFeed() {
+      feed.classList.add("is-clearing");
+      later(300, function () {
+        feed.textContent = "";
+        feed.classList.remove("is-clearing");
+        later(700, next);
+      });
+    }
+
+    function next() {
+      var e = SESSION[i % LEN];
+      i++;
+      var p = pace();
+
+      if (e.k !== "cmd") {
+        push(renderEntry(e, false));
+        var base = e.k === "dim" ? rand(70, 190) : rand(110, 330);
+        later(base * p.out * slow, next);
+        return;
+      }
+
+      var line = mk("div", "bg-term-line is-cmd is-typing");
+      line.appendChild(promptFrag(e));
+      push(line);
+      /* a beat with the caret blinking before the first key, like a person */
+      later(rand(300, 620) * p.out, function () {
+        typeInto(line, e, function () {
+          line.classList.remove("is-typing");
+          if (e.clear) later(420, clearFeed);
+          else later(rand(260, 540) * p.out, next);
+        });
+      });
+    }
+
+    return {
+      start: function () {
+        if (alive) return;
+        alive = true;
+        feed.textContent = "";
+        prefillFeed(feed, i, maxLines - 4);
+        later(rand(200, 700), next);
+      },
+      stop: function () {
+        alive = false;
+        clearTimeout(timer); timer = 0; pending = null;
+        feed.classList.remove("is-clearing");
+        feed.textContent = "";
+      },
+      resume: function () {
+        if (alive && pending && !isPaused()) {
+          var f = pending;
+          later(60, f);
+        }
+      }
+    };
   }
 
-  /* Two columns run the same session out of phase and at different speeds. */
-  runFeed(feeds[0], 0, 26);
-  if (feeds[1]) runFeed(feeds[1], 13, 38);
+  /* Two columns run the same session out of phase and at different speeds.
+     The second one only exists (and only runs) at >= 1280px. */
+  var r1 = createRunner(feeds[0], S1, 1);
+  var r2 = feeds[1] ? createRunner(feeds[1], S2, 1.5) : null;
+  runners.push(r1);
+  if (r2) runners.push(r2);
+
+  function syncWide() {
+    if (!r2) return;
+    if (wideMQ.matches) r2.start(); else r2.stop();
+  }
+
+  r1.start();
+  syncWide();
+  listen(wideMQ, syncWide);
+
+  var resizeTimer = 0;
+  win.addEventListener("resize", function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(measure, 200);
+  }, { passive: true });
+
+  /* fade in once the first frame of scrollback is in place */
+  requestAnimationFrame(function () { layer.setAttribute("data-live", ""); });
 })();
 </script>
 </body>
