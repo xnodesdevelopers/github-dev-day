@@ -1356,6 +1356,16 @@ button,input{font-family:inherit}
           <p class="field-error" id="err-certName">Enter the name to print on your certificate.</p>
         </div>
 
+        <div class="field" id="field-whatsapp">
+          <label class="field-label" for="whatsapp">WhatsApp number <span class="req">*</span></label>
+          <input class="input" id="whatsapp" name="whatsapp" type="tel"
+                 autocomplete="tel" inputmode="tel"
+                 placeholder="e.g. 0771234567" required
+                 aria-describedby="help-whatsapp err-whatsapp" />
+          <p class="field-help" id="help-whatsapp">Used for important event updates.</p>
+          <p class="field-error" id="err-whatsapp">Enter a valid WhatsApp number.</p>
+        </div>
+
         <div class="form-action">
           <button type="submit" class="btn btn-primary btn-lg submit-btn" id="submit-btn" data-state="idle">
             <span id="submit-inner" style="display:inline-flex;align-items:center;gap:8px">
@@ -1691,7 +1701,8 @@ button,input{font-family:inherit}
     regNumber: "entry.50903762",
     faculty: "entry.1308110272",
     email: "entry.378043811",
-    certName: "entry.1798877071"
+    certName: "entry.1798877071",
+    whatsapp: "entry.184568131"
   };
 
   var form = $("#reg-form");
@@ -1731,7 +1742,8 @@ button,input{font-family:inherit}
     { name: "fullName", el: $("#full-name") },
     { name: "regNumber", el: $("#reg-number") },
     { name: "email", el: $("#email") },
-    { name: "certName", el: $("#cert-name") }
+    { name: "certName", el: $("#cert-name") },
+    { name: "whatsapp", el: $("#whatsapp") }
   ];
   TEXT_FIELDS.forEach(function (f) {
     f.el.addEventListener("input", function () { if (f.el.value.trim()) clearError(f.name); });
@@ -1740,7 +1752,14 @@ button,input{font-family:inherit}
   function validate() {
     var firstBad = null;
     TEXT_FIELDS.forEach(function (f) {
-      var ok = f.el.value.trim().length > 0 && (f.el.type !== "email" || f.el.checkValidity());
+      var value = f.el.value.trim();
+      var ok = value.length > 0 && (f.el.type !== "email" || f.el.checkValidity());
+
+      if (f.name === "whatsapp") {
+        var normalized = value.replace(/[\s-]/g, "");
+        ok = /^(?:0?7\d{8}|\+947\d{8})$/.test(normalized);
+      }
+
       markError(f.name, !ok);
       if (!ok && !firstBad) firstBad = f.el;
     });
@@ -1761,6 +1780,7 @@ button,input{font-family:inherit}
     p.set(ENTRY.faculty, hidden.value);
     p.set(ENTRY.email, $("#email").value.trim());
     p.set(ENTRY.certName, $("#cert-name").value.trim());
+    p.set(ENTRY.whatsapp, $("#whatsapp").value.trim());
     return p;
   }
 
@@ -1848,7 +1868,7 @@ button,input{font-family:inherit}
     valueEl.textContent = "Select your faculty";
     trigger.setAttribute("data-placeholder", "true");
     options.forEach(function (o) { o.setAttribute("aria-selected", "false"); o.classList.remove("is-active"); });
-    ["fullName", "regNumber", "faculty", "email", "certName"].forEach(clearError);
+    ["fullName", "regNumber", "faculty", "email", "certName", "whatsapp"].forEach(clearError);
     formError.style.display = "none";
     setSubmit("idle");
     confettiLayer.innerHTML = "";
