@@ -663,6 +663,30 @@ button,input{font-family:inherit}
 .side-meta{display:grid;gap:var(--s-1);margin-top:var(--s-2)}
 .side-meta li{display:flex;align-items:center;gap:var(--s-1);font-size:.875rem;color:var(--fg-muted)}
 
+.contact-list{display:grid;gap:var(--s-2)}
+.contact-item{
+  display:flex;align-items:flex-start;gap:var(--s-2);
+  padding:var(--s-2);border-radius:var(--r-md);
+  border:1px solid var(--border-muted);
+  background:var(--glass);
+  transition:border-color var(--t-base) var(--ease),transform var(--t-base) var(--ease);
+}
+.contact-item:hover{border-color:var(--border-strong);transform:translate3d(0,-1px,0)}
+.contact-avatar{
+  flex:0 0 40px;width:40px;height:40px;border-radius:var(--r-pill);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.75rem;font-weight:700;color:#05070d;letter-spacing:.02em;
+}
+.contact-info{min-width:0}
+.contact-name{margin:0;font-size:.8125rem;font-weight:600;color:var(--fg);line-height:1.35}
+.contact-role{margin:2px 0 var(--s-h);font-size:.75rem;color:var(--fg-subtle)}
+.contact-phone{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:.8125rem;font-weight:500;color:var(--accent);
+}
+.contact-phone .icon{width:13px;height:13px;fill:var(--accent)}
+.contact-phone:hover{color:var(--accent-emphasis)}
+
 .organizer-logo{
   width:auto;
   max-width:100%;
@@ -1054,7 +1078,7 @@ button,input{font-family:inherit}
           </span>
           <span class="dt-item">
             <svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0Zm0 1.5a6.5 6.5 0 1 1 0 13 6.5 6.5 0 0 1 0-13ZM7.25 4a.75.75 0 0 1 1.5 0v3.94l2.72 1.573a.75.75 0 1 1-.75 1.3l-3.1-1.79A.75.75 0 0 1 7.25 8.4Z"/></svg>
-            <span>9.00 AM</span>
+            <span>10.00 AM</span>
           </span>
           <span class="dt-item">
             <svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0a5 5 0 0 0-5 5c0 4.5 5 11 5 11s5-6.5 5-11a5 5 0 0 0-5-5Zm0 7.25A2.25 2.25 0 1 1 8 2.75a2.25 2.25 0 0 1 0 4.5Z"/></svg>
@@ -1238,6 +1262,32 @@ button,input{font-family:inherit}
            src="https://i.ibb.co/TB5CV7P5/white.png"
            alt="IEEE Student Branch, Rajarata University of Sri Lanka"
            loading="lazy" decoding="async" />
+    </section>
+
+    <section class="side-card">
+      <h4 class="side-title">Contact</h4>
+      <ul class="contact-list">
+        <li class="contact-item">
+          <div class="contact-info">
+            <p class="contact-name">J.P.Akindu Dulwan Jayaweera</p>
+            <p class="contact-role">Project Chair</p>
+            <a class="contact-phone" href="tel:+94742872330">
+              
+              0742872330
+            </a>
+          </div>
+        </li>
+        <li class="contact-item">
+          <div class="contact-info">
+            <p class="contact-name">H.M.M.S.Rajanayaka</p>
+            <p class="contact-role">Project Secretary</p>
+            <a class="contact-phone" href="tel:+94760199756">
+            
+              0760199756
+            </a>
+          </div>
+        </li>
+      </ul>
     </section>
 
     <section class="side-card">
